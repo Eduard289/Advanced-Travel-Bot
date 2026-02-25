@@ -4,7 +4,7 @@ import time
 import concurrent.futures
 import requests
 import random
-# from core.scrapers import FlightArbitrageScanner # Descomenta esto cuando tengamos el scraper real
+from core.scrapers import FlightArbitrageScanner # Descomenta esto cuando tengamos el scraper real
 
 # --- 1. CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(
