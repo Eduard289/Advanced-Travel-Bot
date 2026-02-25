@@ -16,19 +16,27 @@ st.set_page_config(
 # --- Estilos CSS Personalizados (Footer, Métricas y Cajas) ---
 st.markdown("""
     <style>
+    /* Importamos la fuente Cardo desde Google Fonts */
+    @import url('https://fonts.googleapis.com/css2?family=Cardo:ital,wght@0,400;0,700;1,400&display=swap');
+
+    /* Estilo del Footer fijo abajo (Diseño actualizado: Blanco, Negro y Cardo) */
     .footer {
         position: fixed;
         left: 0;
         bottom: 0;
         width: 100%;
-        background-color: #0E1117;
-        color: #FAFAFA;
+        background-color: #FFFFFF; /* Fondo blanco */
+        color: #000000; /* Letra negra */
         text-align: center;
-        padding: 10px;
-        font-size: 0.85rem;
-        border-top: 1px solid #4B4B4B;
+        padding: 12px 10px;
+        font-size: 1rem;
+        font-family: 'Cardo', serif; /* Fuente Cardo */
+        border-top: 2px solid #000000; /* Línea separadora negra */
+        box-shadow: 0px -4px 10px rgba(0, 0, 0, 0.15); /* Sombra elegante hacia arriba */
         z-index: 100;
     }
+    
+    /* Estilo de la caja de detalles técnicos */
     .tech-box {
         background-color: #1E1E1E; 
         color: #E0E0E0 !important; 
@@ -41,8 +49,9 @@ st.markdown("""
         color: #FFFFFF !important;
         margin-top: 0;
     }
+    /* Ajuste para que el footer no tape el contenido final de la página */
     .block-container {
-        padding-bottom: 5rem;
+        padding-bottom: 6rem;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -217,11 +226,10 @@ with st.expander("🛠️ Ver Detalles Técnicos y Arquitectura (Under the Hood)
     """, unsafe_allow_html=True)
     st.caption("Nota: Por motivos de caducidad de tokens efímeros, la interfaz utiliza un motor heurístico geolocalizado para inyectar en tiempo real los márgenes de arbitraje (Spreads) descubiertos durante la auditoría técnica de la red.")
 
-
 # --- 5. FOOTER PERSONALIZADO ---
 st.markdown("""
     <div class="footer">
         <b>Diseñado por Jose Luis Asenjo</b><br>
         Desarrollo de código basado en compilación de datos sin APIs. Implementación de evasión de huella digital mediante las librerías <b>curl_cffi</b> y <b>tls-client</b>.
     </div>
-""", unsafe_allow_html=True)
+""", unsafe_allow_html=True)True)
