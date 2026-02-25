@@ -232,4 +232,4 @@ st.markdown("""
         <b>Diseñado por Jose Luis Asenjo</b><br>
         Desarrollo de código basado en compilación de datos sin APIs. Implementación de evasión de huella digital mediante las librerías <b>curl_cffi</b> y <b>tls-client</b>.
     </div>
-""", unsafe_allow_html=True)True)
+""", unsafe_allow_html=True)
