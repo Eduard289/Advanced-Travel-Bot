@@ -230,6 +230,6 @@ with st.expander("🛠️ Ver Detalles Técnicos y Arquitectura (Under the Hood)
 st.markdown("""
     <div class="footer">
         <b>Diseñado por Jose Luis Asenjo</b><br>
-        Desarrollo de código basado en compilación de datos sin APIs. Implementación de evasión de huella digital mediante las librerías <b>curl_cffi</b> y <b>tls-client</b>.
+      <b> Desarrollo de código basado en compilación de datos sin APIs. Implementación de evasión de huella digital mediante las librerías <b>curl_cffi</b> y <b>tls-client</b>.
     </div>
 """, unsafe_allow_html=True)
