@@ -2,37 +2,62 @@ import streamlit as st
 import pandas as pd
 import time
 import concurrent.futures
-from core.scrapers import FlightArbitrageScanner
+import requests
+import random
+# from core.scrapers import FlightArbitrageScanner # Descomenta esto cuando tengamos el scraper real
 
-# --- 1. BASE DE DATOS DE AEROPUERTOS ---
-AEROPUERTOS = [
-    "San Sebastián (EAS)",
-    "Bilbao (BIO)",
-    "Madrid (MAD)",
-    "Barcelona (BCN)",
-    "Málaga (AGP)",
-    "Palma de Mallorca (PMI)",
-    "Londres Heathrow (LHR)",
-    "Londres Gatwick (LGW)",
-    "París Charles de Gaulle (CDG)",
-    "Roma Fiumicino (FCO)",
-    "Berlín Brandeburgo (BER)",
-    "Ámsterdam Schiphol (AMS)",
-    "Nueva York (JFK)",
-    "Los Ángeles (LAX)",
-    "Tokio Narita (NRT)",
-    "Tokio Haneda (HND)",
-    "Dubái (DXB)",
-    "Sídney (SYD)"
-]
-
-# --- 2. CONFIGURACIÓN DE PÁGINA ---
+# --- 1. CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(
     page_title="Advanced Travel Bot", 
     page_icon="✈️", 
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# --- 2. CARGA GLOBAL DE AEROPUERTOS (Caché Optimizada) ---
+@st.cache_data(show_spinner="Cargando base de datos global de aeropuertos...")
+def cargar_aeropuertos():
+    """Descarga y cachea la lista de todos los aeropuertos del mundo con código IATA."""
+    try:
+        # Repositorio Open Source muy fiable y rápido
+        url = "https://raw.githubusercontent.com/mwgg/Airports/master/airports.json"
+        response = requests.get(url, timeout=5)
+        data = response.json()
+        
+        lista_aeropuertos = []
+        for key, info in data.items():
+            iata = info.get("iata")
+            city = info.get("city")
+            name = info.get("name")
+            
+            # Filtramos solo aeropuertos comerciales con IATA válido
+            if iata and iata != "\\N" and len(iata) == 3 and city:
+                lista_aeropuertos.append(f"{city} - {name} ({iata})")
+                
+        # Ordenamos alfabéticamente y eliminamos duplicados
+        return sorted(list(set(lista_aeropuertos)))
+    except Exception as e:
+        # Fallback de emergencia si falla la red
+        return [
+            "Madrid - Barajas (MAD)", 
+            "Barcelona - El Prat (BCN)", 
+            "Nueva York - John F Kennedy (JFK)", 
+            "Tokio - Narita (NRT)",
+            "Londres - Heathrow (LHR)"
+        ]
+
+# Cargamos la lista antes de pintar la interfaz
+AEROPUERTOS_GLOBALES = cargar_aeropuertos()
+
+# Búsqueda de índices por defecto (para que no salga el primero de la lista global, que suele ser extraño)
+def buscar_indice(codigo_iata, lista):
+    for i, aero in enumerate(lista):
+        if f"({codigo_iata})" in aero:
+            return i
+    return 0
+
+idx_madrid = buscar_indice("MAD", AEROPUERTOS_GLOBALES)
+idx_tokio = buscar_indice("NRT", AEROPUERTOS_GLOBALES)
 
 # --- 3. INTERFAZ PRINCIPAL ---
 st.title("✈️ Advanced Travel Bot: Live Arbitrage")
@@ -42,9 +67,9 @@ st.markdown("### ¿Influyen los navegadores y sistemas operativos en el precio?"
 with st.sidebar:
     st.header("Parámetros de Vuelo")
     
-    # Desplegables amigables para el usuario
-    origen_seleccionado = st.selectbox("Origen", AEROPUERTOS, index=0)
-    destino_seleccionado = st.selectbox("Destino Principal", AEROPUERTOS, index=12) # Por defecto JFK
+    # Desplegables con búsqueda integrada (puedes escribir "Bilbao" o "Tokio")
+    origen_seleccionado = st.selectbox("Origen", AEROPUERTOS_GLOBALES, index=idx_madrid)
+    destino_seleccionado = st.selectbox("Destino Principal", AEROPUERTOS_GLOBALES, index=idx_tokio)
     fecha = st.date_input("Fecha de Salida")
     
     # Extracción automática del código IATA (las 3 letras entre paréntesis)
@@ -58,8 +83,8 @@ with st.sidebar:
     st.caption("✅ RAM: Modo Pass-through (20-50 MB)")
     st.caption("🚦 Semáforo de Velocidad: Óptimo")
 
-# Instanciamos el escáner (esto asume que core/scrapers.py está creado)
-scanner = FlightArbitrageScanner()
+# Instanciamos el escáner (Simulado por ahora)
+# scanner = FlightArbitrageScanner()
 
 # --- 5. SECCIÓN A: ANÁLISIS INDIVIDUAL (A/B/C Test) ---
 st.markdown("---")
@@ -68,15 +93,20 @@ st.markdown("### 🔍 Análisis Directo de Huella Digital")
 if st.button("Ejecutar Análisis", type="primary"):
     with st.spinner("Interceptando API, aplicando semáforo de velocidad y purgando JSON de la memoria..."):
         
-        # Endpoint simulado para la demostración inyectando los códigos extraídos
+        time.sleep(1.5) # Semáforo de velocidad simulado
+        
+        # Endpoint para la demostración inyectando los códigos mundiales extraídos
         endpoint = f"https://api.aerolinea-fantasma.com/v1/prices?from={origen}&to={destino}"
         
-        # Simulamos la respuesta del scraper con 3 perfiles distintos
-        # (En producción, esto lo devolvería scanner.compare_flight_prices)
+        # --- AQUÍ IRÁ LA CONEXIÓN REAL AL SCRAPER ---
+        # resultados = scanner.compare_flight_prices(endpoint, base_payload={})
+        
+        # Por ahora, mantenemos la simulación dinámica para probar la UI
+        precio_base = random.uniform(250.0, 950.0)
         resultados = {
-            'Desktop (Windows)': 450.00,
-            'Mobile (iOS)': 415.00,
-            'Mobile (Android)': 425.00
+            'Desktop (Windows)': precio_base,
+            'Mobile (iOS)': precio_base - random.uniform(25.0, 85.0),
+            'Mobile (Android)': precio_base - random.uniform(10.0, 45.0)
         }
         
         precio_max = max(resultados.values())
@@ -88,21 +118,13 @@ if st.button("Ejecutar Análisis", type="primary"):
         
         with col1:
             st.metric(label="🖥️ PC Windows", value=f"€{resultados['Desktop (Windows)']:.2f}")
-            
         with col2:
             st.metric(label="📱 Apple iOS", value=f"€{resultados['Mobile (iOS)']:.2f}")
-            
         with col3:
             st.metric(label="🤖 Android", value=f"€{resultados['Mobile (Android)']:.2f}")
-            
         with col4:
             if spread > 0:
-                st.metric(
-                    label="💰 Spread Máximo (Ahorro)", 
-                    value=f"€{spread:.2f}", 
-                    delta=f"-€{spread:.2f} de diferencia",
-                    delta_color="inverse"
-                )
+                st.metric(label="💰 Spread Máximo (Ahorro)", value=f"€{spread:.2f}", delta=f"-€{spread:.2f} de diferencia", delta_color="inverse")
             else:
                 st.metric(label="💰 Spread Máximo", value="€0.00")
                 
@@ -113,7 +135,7 @@ st.markdown("---")
 st.markdown("### 🌍 Radar Multidestino (Análisis Concurrente)")
 st.write("Escanea hubs globales simultáneamente sin afectar el rendimiento de la lógica principal.")
 
-destinos_populares = ["JFK", "NRT", "LHR", "CDG", "DXB"]
+destinos_populares = ["JFK", "NRT", "LHR", "CDG", "DXB", "SYD", "EZE", "GRU"]
 
 if st.button("Lanzar Radar Global", type="secondary"):
     resultados_radar = []
@@ -124,9 +146,8 @@ if st.button("Lanzar Radar Global", type="secondary"):
         def procesar_destino(dest):
             # Endpoint simulado para el radar
             endpoint_radar = f"https://api.aerolinea-fantasma.com/v1/prices?from={origen}&to={dest}"
-            # Simulamos datos variables para la gráfica
-            import random
-            precio_base = random.randint(300, 800)
+            # Datos dinámicos para la gráfica visual
+            precio_base = random.randint(300, 1200)
             return {
                 "Destino": dest,
                 "PC Windows (€)": precio_base,
@@ -140,22 +161,17 @@ if st.button("Lanzar Radar Global", type="secondary"):
             
             for i, futuro in enumerate(concurrent.futures.as_completed(futuros)):
                 resultado = futuro.result()
-                # Calculamos el spread máximo para la tabla
                 precios = [resultado["PC Windows (€)"], resultado["Apple iOS (€)"], resultado["Android (€)"]]
                 resultado["Spread Máximo"] = max(precios) - min(precios)
-                
                 resultados_radar.append(resultado)
                 progress_bar.progress((i + 1) / len(destinos_populares))
 
         df_radar = pd.DataFrame(resultados_radar)
-        
         st.success("Escaneo concurrente completado. Gestión de errores y control de RAM ejecutados correctamente.")
         
         col_tabla, col_grafico = st.columns([1, 1])
-        
         with col_tabla:
             st.dataframe(df_radar, use_container_width=True)
-            
         with col_grafico:
             st.markdown("**📊 Discrepancia de precios por destino**")
             st.bar_chart(data=df_radar.set_index("Destino")[["Spread Máximo"]], color="#17B169")
