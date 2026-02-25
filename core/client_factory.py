@@ -1,26 +1,27 @@
 from curl_cffi import requests
 from modules.identity import IdentityManager
+from utils.exceptions import auto_heal_request
 
 class GhostClient:
-    """Cliente que mimetiza navegadores reales para evitar bloqueos"""
-    
     def __init__(self):
         self.identity_manager = IdentityManager()
+        # Si tienes la app 1.1.1.1 WARP corriendo en modo proxy local, suele estar en este puerto
+        self.warp_proxy = "socks5://127.0.0.1:40000" 
 
-    def fetch(self, url, proxy=None):
+    # Aplicamos el decorador. Si falla, reintenta 3 veces y permite usar URLs espejo.
+    @auto_heal_request(max_retries=3, switch_to_mirror=True)
+    def fetch(self, url, use_warp=False):
         profile, headers = self.identity_manager.get_random_profile()
         
-        proxies = {"http": proxy, "https": proxy} if proxy else None
+        # Enrutamos por 1.1.1.1 si se solicita, para evadir bloqueos de IP de tu operadora
+        proxies = {"http": self.warp_proxy, "https": self.warp_proxy} if use_warp else None
         
-        try:
-            # La clave es 'impersonate'. Esto configura el TLS y HTTP2 para que coincida con el UA.
-            response = requests.get(
-                url, 
-                headers=headers, 
-                impersonate=profile["impersonate"],
-                proxies=proxies,
-                timeout=30
-            )
-            return response
-        except Exception as e:
-            return f"Error en la petición: {str(e)}"
+        # La petición base. Si esto falla, el @auto_heal_request lo captura arriba.
+        response = requests.get(
+            url, 
+            headers=headers, 
+            impersonate=profile["impersonate"],
+            proxies=proxies,
+            timeout=15
+        )
+        return response
